@@ -115,12 +115,17 @@ end
 local function hasText(s) return type(s) == "string" and s ~= "" end
 
 -- заголовок и описание в карточке; right = место справа под переключатель/поле
-function Library.Caption(f, title, desc, right)
+function Library.Caption(f, title, desc, right, center)
 	if hasText(desc) then
-		label(f, title or "", 14, "$text", F.med, { Position = UDim2.fromOffset(14, 12), Size = UDim2.new(1, -right, 0, 18) })
-		label(f, desc, 12, "$mute", F.reg, { Position = UDim2.fromOffset(14, 30), Size = UDim2.new(1, -right, 0, 14) })
+		label(f, title or "", 14, "$text", F.med, { Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -right, 0, 16) })
+		label(f, desc, 12, "$mute", F.reg, { Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -right, 0, 14) })
+	elseif center then
+		label(f, title or "", 14, "$text", F.med, {
+			AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0),
+			Size = UDim2.new(1, -right, 0, 18),
+		})
 	else
-		label(f, title or "", 14, "$text", F.med, { Position = UDim2.fromOffset(14, 12), Size = UDim2.new(1, -right, 0, 22) })
+		label(f, title or "", 14, "$text", F.med, { Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -right, 0, 16) })
 	end
 end
 local caption = Library.Caption
@@ -151,7 +156,7 @@ function Tab:AddCard(h)
 	self.Order += 1
 	return new("Frame", {
 		LayoutOrder = self.Order, Size = UDim2.new(1, 0, 0, h),
-		BackgroundColor3 = "$card", BorderSizePixel = 0, Corner = 12, Stroke = 0.9,
+		BackgroundColor3 = "$card", BorderSizePixel = 0, Corner = 8, Stroke = 0.9,
 	}, self.Page)
 end
 
@@ -180,7 +185,7 @@ function Tab:AddParagraph(o)
 	local f = self:AddCard(0)
 	f.AutomaticSize = Enum.AutomaticSize.Y
 	new("UIPadding", {
-		PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8),
+		PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6),
 		PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12),
 	}, f)
 	new("UIListLayout", { Padding = UDim.new(0, has and 2 or 0), SortOrder = Enum.SortOrder.LayoutOrder }, f)
@@ -199,8 +204,8 @@ function Tab:AddParagraph(o)
 end
 
 function Tab:AddButton(o)
-	local f = self:AddCard(hasText(o.Description) and 64 or 46)
-	caption(f, o.Title, o.Description, 50)
+	local f = self:AddCard(hasText(o.Description) and 48 or 32)
+	caption(f, o.Title, o.Description, 36, true)
 	label(f, "›", 20, "$mute", F.bold, {
 		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -16, 0.5, 0), Size = UDim2.fromOffset(20, 24),
 		TextXAlignment = Enum.TextXAlignment.Right,
@@ -215,20 +220,20 @@ function Tab:AddButton(o)
 end
 
 function Tab:AddToggle(id, o)
-	local f = self:AddCard(hasText(o.Description) and 64 or 46)
-	caption(f, o.Title, o.Description, 80)
+	local f = self:AddCard(hasText(o.Description) and 48 or 32)
+	caption(f, o.Title, o.Description, 58, true)
 	local track = new("TextButton", {
-		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(46, 26),
-		AutoButtonColor = false, Text = "", Corner = 13,
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(40, 20),
+		AutoButtonColor = false, Text = "", Corner = 10,
 	}, f)
 	local knob = new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(20, 20),
-		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Corner = 10,
+		AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(14, 14),
+		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Corner = 7,
 	}, track)
 
 	local opt = option(id, o, "Toggle", o.Default == true)
 	local function paint(animate)
-		local pos = opt.Value and UDim2.new(1, -13, 0.5, 0) or UDim2.new(0, 13, 0.5, 0)
+		local pos = opt.Value and UDim2.new(1, -10, 0.5, 0) or UDim2.new(0, 10, 0.5, 0)
 		local col = opt.Value and C.on or C.off
 		if animate then
 			Tween:Create(knob, tw, { Position = pos }):Play()
@@ -251,14 +256,14 @@ end
 function Tab:AddSlider(id, o)
 	local minV, maxV = o.Min or 0, o.Max or 100
 	local mult = 10 ^ (o.Rounding or 0)
-	local f = self:AddCard(hasText(o.Description) and 84 or 68)
-	caption(f, o.Title, o.Description, 90)
+	local f = self:AddCard(hasText(o.Description) and 64 or 48)
+	caption(f, o.Title, o.Description, 72)
 	local box = new("TextBox", {
-		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(58, 24),
-		BackgroundColor3 = "$bg", TextColor3 = "$text", Font = F.med, TextSize = 13, ClearTextOnFocus = false, Corner = 8,
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 6), Size = UDim2.fromOffset(52, 20),
+		BackgroundColor3 = "$bg", TextColor3 = "$text", Font = F.med, TextSize = 13, ClearTextOnFocus = false, Corner = 6,
 	}, f)
 	local hit = new("TextButton", {
-		Position = UDim2.new(0, 14, 1, -30), Size = UDim2.new(1, -28, 0, 20),
+		Position = UDim2.new(0, 12, 1, -20), Size = UDim2.new(1, -24, 0, 16),
 		BackgroundTransparency = 1, AutoButtonColor = false, Text = "",
 	}, f)
 	local track = new("Frame", {
@@ -311,10 +316,10 @@ function Tab:AddSlider(id, o)
 end
 
 function Tab:AddInput(id, o)
-	local f = self:AddCard(hasText(o.Description) and 92 or 76)
-	caption(f, o.Title, o.Description, 28)
+	local f = self:AddCard(hasText(o.Description) and 70 or 54)
+	caption(f, o.Title, o.Description, 20)
 	local box = new("TextBox", {
-		Position = UDim2.new(0, 12, 1, -40), Size = UDim2.new(1, -24, 0, 28),
+		Position = UDim2.new(0, 10, 1, -30), Size = UDim2.new(1, -20, 0, 24),
 		BackgroundColor3 = "$bg", TextColor3 = "$text", PlaceholderColor3 = "$mute", PlaceholderText = o.Placeholder or "",
 		Font = F.reg, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
 		Text = o.Default or "", Corner = 8,
