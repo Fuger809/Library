@@ -163,21 +163,38 @@ function Tab:AddContainer()
 	}, self.Page)
 end
 
+function Tab:AddSection(title)
+	self.Order += 1
+	local f = new("Frame", {
+		LayoutOrder = self.Order, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1,
+	}, self.Page)
+	label(f, tostring(title or ""), 13, "$mute", F.bold, {
+		Size = UDim2.new(1, -4, 1, 0), Position = UDim2.fromOffset(2, 0),
+	})
+	return f
+end
+
 function Tab:AddParagraph(o)
+	o = o or {}
+	local has = hasText(o.Content)
 	local f = self:AddCard(0)
 	f.AutomaticSize = Enum.AutomaticSize.Y
 	new("UIPadding", {
-		PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14),
+		PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8),
+		PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12),
 	}, f)
-	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, f)
-	local t = label(f, o.Title or "", 14, "$text", F.med, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 18) })
-	local c = label(f, o.Content or "", 12, "$mute", F.reg, {
-		LayoutOrder = 2, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y,
-		TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
-	})
+	new("UIListLayout", { Padding = UDim.new(0, has and 2 or 0), SortOrder = Enum.SortOrder.LayoutOrder }, f)
+	local t = label(f, o.Title or "", 14, "$text", F.med, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 16) })
+	local c
+	if has then
+		c = label(f, o.Content, 12, "$mute", F.reg, {
+			LayoutOrder = 2, Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y,
+			TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
+		})
+	end
 	return {
 		SetTitle = function(_, s) t.Text = s end,
-		SetContent = function(_, s) c.Text = s end,
+		SetContent = function(_, s) if c then c.Text = s end end,
 	}
 end
 
@@ -548,7 +565,7 @@ function Library:CreateWindow(o)
 			CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollBarThickness = 3, ScrollBarImageColor3 = "$accent", ScrollingDirection = Enum.ScrollingDirection.Y,
 		}, content)
-		new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, tab.Page)
+		new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, tab.Page)
 		new("UIPadding", {
 			PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 48),
 		}, tab.Page)
