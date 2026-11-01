@@ -374,7 +374,7 @@ function Library:CreateWindow(o)
 	}, win)
 	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, side)
 	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 14) }, side)
-	label(side, "РАЗДЕЛЫ", 11, "$mute", F.bold, { LayoutOrder = 0, Size = UDim2.new(1, -24, 0, 16) })
+	label(side, "РАЗДЕЛЫ", 11, "$mute", F.bold, { LayoutOrder = 0, Size = UDim2.fromOffset(SIDE_W - 24, 16) })
 	new("Frame", {
 		Position = UDim2.fromOffset(SIDE_W, HEADER), Size = UDim2.new(0, 1, 1, -HEADER),
 		BackgroundColor3 = "$text", BackgroundTransparency = 0.92, BorderSizePixel = 0,
@@ -453,7 +453,7 @@ function Library:CreateWindow(o)
 		}, tab.Page)
 
 		local b = new("TextButton", {
-			LayoutOrder = #self.Tabs + 1, Size = UDim2.new(1, -12, 0, 36), BackgroundTransparency = 1,
+			LayoutOrder = #self.Tabs + 1, Size = UDim2.fromOffset(SIDE_W - 18, 36), BackgroundTransparency = 1,
 			AutoButtonColor = false, Text = "", Corner = 10,
 		}, side)
 		new("Frame", {
@@ -497,12 +497,39 @@ function Library:CreateWindow(o)
 	btnMin.MouseButton1Click:Connect(function() Window:Minimize(true) end)
 	bubble.MouseButton1Click:Connect(function() Window:Minimize(false) end)
 
-	local mode, start, startPos, startSize
+	local mode, start, startPos, startSize, tabScroll
+
+	local function anchorPoint()
+		local parentSize = win.Parent.AbsoluteSize
+		local x = win.Position.X.Scale * parentSize.X + win.Position.X.Offset
+		local y = win.Position.Y.Scale * parentSize.Y + win.Position.Y.Offset
+		return x, y
+	end
+
+	-- левый верхний угол на экране. UIScale крутится вокруг якоря, поэтому угол считается от него
+	local function topLeft()
+		local x, y = anchorPoint()
+		local s = scale.Scale
+		return x - win.Size.X.Offset * s * win.AnchorPoint.X, y - win.Size.Y.Offset * s * win.AnchorPoint.Y
+	end
+
+	local function pinTopLeft()
+		local left, top = topLeft()
+		win.AnchorPoint = Vector2.new(0, 0)
+		win.Position = UDim2.fromOffset(left, top)
+		return left, top
+	end
+
 	local function begin(m)
 		return function(i)
 			if not isPress(i) then return end
-			mode, start, startPos = m, i.Position, win.Position
+			mode, start = m, i.Position
 			startSize = Vector2.new(win.Size.X.Offset, win.Size.Y.Offset)
+			tabScroll = side.CanvasPosition
+			if m == "size" then
+				pinTopLeft()
+			end
+			startPos = win.Position
 		end
 	end
 	dragZone.InputBegan:Connect(begin("move"))
@@ -518,7 +545,8 @@ function Library:CreateWindow(o)
 			local w = math.clamp(startSize.X + d.X / s, 440, 1000)
 			local h = math.clamp(startSize.Y + d.Y / s, 340, 760)
 			win.Size = UDim2.fromOffset(w, h)
-			win.Position = startPos + UDim2.fromOffset((w - startSize.X) * s / 2, (h - startSize.Y) * s / 2)
+			-- угол закреплён, список вкладок не сбрасывается наверх
+			if tabScroll then side.CanvasPosition = tabScroll end
 		end
 	end))
 	Library:Hook(UIS.InputEnded:Connect(function(i)
