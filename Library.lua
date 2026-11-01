@@ -375,6 +375,12 @@ function Library:CreateWindow(o)
 	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, side)
 	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 14) }, side)
 	label(side, "РАЗДЕЛЫ", 11, "$mute", F.bold, { LayoutOrder = 0, Size = UDim2.fromOffset(SIDE_W - 24, 16) })
+	local ordering = false
+	local orderBtn = new("TextButton", {
+		LayoutOrder = 1, Size = UDim2.fromOffset(SIDE_W - 18, 28),
+		BackgroundColor3 = "$soft", BackgroundTransparency = 1, AutoButtonColor = false,
+		Font = F.bold, TextSize = 12, TextColor3 = "$mute", Text = "Порядок", Corner = 8,
+	}, side)
 	new("Frame", {
 		Position = UDim2.fromOffset(SIDE_W, HEADER), Size = UDim2.new(0, 1, 1, -HEADER),
 		BackgroundColor3 = "$text", BackgroundTransparency = 0.92, BorderSizePixel = 0,
@@ -438,9 +444,104 @@ function Library:CreateWindow(o)
 	end
 	Library:OnTheme(function() if current then showTab(current) end end)
 
+	-- порядок вкладок пишется в ModeGUI/taborder.json и поднимается при следующем заходе
+	local Http = game:GetService("HttpService")
+	local ORDER_FILE = "ModeGUI/taborder.json"
+	local savedOrder, born = {}, 0
+	do
+		if typeof(readfile) == "function" then
+			local ok, raw = pcall(readfile, ORDER_FILE)
+			if ok and type(raw) == "string" and raw ~= "" then
+				local ok2, data = pcall(function() return Http:JSONDecode(raw) end)
+				if ok2 and type(data) == "table" then
+					for i, title in ipairs(data) do
+						if type(title) == "string" then savedOrder[title] = i end
+					end
+				end
+			end
+		end
+	end
+
+	local function sortedTabs()
+		local list = {}
+		for _, t in ipairs(Window.Tabs) do table.insert(list, t) end
+		table.sort(list, function(a, b)
+			local ia, ib = savedOrder[a.Title], savedOrder[b.Title]
+			if ia and ib then return ia < ib end
+			if ia then return true end
+			if ib then return false end
+			return a.Born < b.Born
+		end)
+		return list
+	end
+
+	local function layoutTabs()
+		Window.Tabs = sortedTabs()
+		for i, t in ipairs(Window.Tabs) do
+			t.Button.LayoutOrder = i + 1
+			if t.Button:FindFirstChild("Up") then
+				t.Button.Up.TextTransparency = i == 1 and 0.65 or 0
+				t.Button.Down.TextTransparency = i == #Window.Tabs and 0.65 or 0
+			end
+		end
+	end
+
+	local function saveOrder()
+		local titles = {}
+		for i, t in ipairs(Window.Tabs) do
+			savedOrder[t.Title] = i
+			titles[i] = t.Title
+		end
+		if typeof(writefile) ~= "function" then return end
+		pcall(function()
+			if typeof(isfolder) == "function" and typeof(makefolder) == "function" and not isfolder("ModeGUI") then
+				makefolder("ModeGUI")
+			end
+			writefile(ORDER_FILE, Http:JSONEncode(titles))
+		end)
+	end
+
+	local function paintOrder()
+		orderBtn.Text = ordering and "Готово" or "Порядок"
+		orderBtn.BackgroundTransparency = ordering and 0 or 1
+		orderBtn.TextColor3 = ordering and C.text or C.mute
+		for _, t in ipairs(Window.Tabs) do
+			local b = t.Button
+			if b:FindFirstChild("Up") then
+				b.Up.Visible = ordering
+				b.Down.Visible = ordering
+				b.Caption.Size = UDim2.new(1, ordering and -46 or -24, 1, 0)
+			end
+		end
+	end
+	Library:OnTheme(paintOrder)
+
+	local function moveTab(tab, dir)
+		local list = sortedTabs()
+		local i
+		for n, t in ipairs(list) do
+			if t == tab then i = n break end
+		end
+		local j = i and i + dir
+		if not j or j < 1 or j > #list then return end
+		for n, t in ipairs(list) do savedOrder[t.Title] = n end
+		savedOrder[list[i].Title], savedOrder[list[j].Title] = j, i
+		layoutTabs()
+		saveOrder()
+	end
+
+	orderBtn.MouseButton1Click:Connect(function()
+		ordering = not ordering
+		paintOrder()
+		if ordering then
+			Library:Notify("Стрелки двигают вкладки вверх и вниз")
+		end
+	end)
+
 	function Window:AddTab(t)
 		t = t or {}
-		local tab = setmetatable({ Title = t.Title or "Tab", Hint = t.Hint or t.Description or "", Order = 0 }, Tab)
+		born += 1
+		local tab = setmetatable({ Title = t.Title or "Tab", Hint = t.Hint or t.Description or "", Order = 0, Born = born }, Tab)
 		tab.Page = new("ScrollingFrame", {
 			Position = UDim2.fromOffset(14, 62), Size = UDim2.new(1, -22, 1, -70),
 			BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false,
@@ -461,12 +562,25 @@ function Library:CreateWindow(o)
 			Size = UDim2.fromOffset(3, 14), BackgroundColor3 = "$accent", BorderSizePixel = 0, Corner = 2,
 		}, b)
 		label(b, tab.Title, 14, C.mute, F.med, { Name = "Caption", Position = UDim2.fromOffset(20, 0), Size = UDim2.new(1, -24, 1, 0) })
+		local function arrow(name, x, text, dir)
+			local a = new("TextButton", {
+				Name = name, Visible = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, x, 0.5, 0),
+				Size = UDim2.fromOffset(16, 18), BackgroundTransparency = 1, AutoButtonColor = false,
+				Font = F.bold, TextSize = 11, TextColor3 = "$mute", Text = text, ZIndex = 3,
+			}, b)
+			a.MouseButton1Click:Connect(function() moveTab(tab, dir) end)
+			return a
+		end
+		arrow("Up", -24, "▲", -1)
+		arrow("Down", -6, "▼", 1)
 		b.MouseButton1Click:Connect(function() showTab(tab) end)
 		b.MouseEnter:Connect(function() if current ~= tab then b.BackgroundTransparency = 0.5 end end)
 		b.MouseLeave:Connect(function() if current ~= tab then b.BackgroundTransparency = 1 end end)
 		tab.Button = b
 
 		table.insert(self.Tabs, tab)
+		layoutTabs()
+		paintOrder()
 		if not current then showTab(tab) end
 		return tab
 	end
