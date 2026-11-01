@@ -1,3 +1,6 @@
+-- ModeGUI Library | окно, вкладки, элементы, темы
+-- local Library = loadstring(game:HttpGet(".../Library.lua"))()
+
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local Tween = game:GetService("TweenService")
@@ -361,8 +364,13 @@ function Library:CreateWindow(o)
 	local btnMin = iconBtn("–", -52, "soft")
 	local btnClose = iconBtn("×", -14, "danger")
 
-	local side = new("Frame", {
-		Position = UDim2.fromOffset(0, HEADER), Size = UDim2.new(0, SIDE_W, 1, -HEADER), BackgroundTransparency = 1,
+	local side = new("ScrollingFrame", {
+		Position = UDim2.fromOffset(0, HEADER), Size = UDim2.new(0, SIDE_W, 1, -HEADER),
+		BackgroundTransparency = 1, BorderSizePixel = 0,
+		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollBarThickness = 3, ScrollBarImageColor3 = "$accent",
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		VerticalScrollBarInset = Enum.ScrollBarInset.None,
 	}, win)
 	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, side)
 	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 14) }, side)
