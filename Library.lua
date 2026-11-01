@@ -365,7 +365,7 @@ function Library:CreateWindow(o)
 	local btnClose = iconBtn("×", -14, "danger")
 
 	local side = new("ScrollingFrame", {
-		Position = UDim2.fromOffset(0, HEADER), Size = UDim2.new(0, SIDE_W, 1, -HEADER),
+		Position = UDim2.fromOffset(0, HEADER), Size = UDim2.new(0, SIDE_W, 1, -(HEADER + 44)),
 		BackgroundTransparency = 1, BorderSizePixel = 0,
 		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 3, ScrollBarImageColor3 = "$accent",
@@ -377,10 +377,10 @@ function Library:CreateWindow(o)
 	label(side, "РАЗДЕЛЫ", 11, "$mute", F.bold, { LayoutOrder = 0, Size = UDim2.fromOffset(SIDE_W - 24, 16) })
 	local ordering = false
 	local orderBtn = new("TextButton", {
-		LayoutOrder = 1, Size = UDim2.fromOffset(SIDE_W - 18, 28),
-		BackgroundColor3 = "$soft", BackgroundTransparency = 1, AutoButtonColor = false,
-		Font = F.bold, TextSize = 12, TextColor3 = "$mute", Text = "Порядок", Corner = 8,
-	}, side)
+		Position = UDim2.new(0, 10, 1, -36), Size = UDim2.fromOffset(SIDE_W - 20, 28),
+		BackgroundColor3 = "$card", BackgroundTransparency = 0, AutoButtonColor = false,
+		Font = F.bold, TextSize = 13, TextColor3 = "$text", Text = "Порядок", ZIndex = 8, Corner = 8,
+	}, win)
 	new("Frame", {
 		Position = UDim2.fromOffset(SIDE_W, HEADER), Size = UDim2.new(0, 1, 1, -HEADER),
 		BackgroundColor3 = "$text", BackgroundTransparency = 0.92, BorderSizePixel = 0,
@@ -478,7 +478,7 @@ function Library:CreateWindow(o)
 	local function layoutTabs()
 		Window.Tabs = sortedTabs()
 		for i, t in ipairs(Window.Tabs) do
-			t.Button.LayoutOrder = i + 1
+			t.Button.LayoutOrder = i
 			if t.Button:FindFirstChild("Up") then
 				t.Button.Up.TextTransparency = i == 1 and 0.65 or 0
 				t.Button.Down.TextTransparency = i == #Window.Tabs and 0.65 or 0
@@ -503,14 +503,14 @@ function Library:CreateWindow(o)
 
 	local function paintOrder()
 		orderBtn.Text = ordering and "Готово" or "Порядок"
-		orderBtn.BackgroundTransparency = ordering and 0 or 1
-		orderBtn.TextColor3 = ordering and C.text or C.mute
+		orderBtn.BackgroundColor3 = ordering and C.accent or C.card
+		orderBtn.TextColor3 = C.text
 		for _, t in ipairs(Window.Tabs) do
 			local b = t.Button
 			if b:FindFirstChild("Up") then
 				b.Up.Visible = ordering
 				b.Down.Visible = ordering
-				b.Caption.Size = UDim2.new(1, ordering and -46 or -24, 1, 0)
+				b.Caption.Size = UDim2.new(1, ordering and -52 or -24, 1, 0)
 			end
 		end
 	end
@@ -565,14 +565,15 @@ function Library:CreateWindow(o)
 		local function arrow(name, x, text, dir)
 			local a = new("TextButton", {
 				Name = name, Visible = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, x, 0.5, 0),
-				Size = UDim2.fromOffset(16, 18), BackgroundTransparency = 1, AutoButtonColor = false,
-				Font = F.bold, TextSize = 11, TextColor3 = "$mute", Text = text, ZIndex = 3,
+				Size = UDim2.fromOffset(18, 18), BackgroundColor3 = "$soft", BackgroundTransparency = 0,
+				AutoButtonColor = false, Font = F.bold, TextSize = 14, TextColor3 = "$text", Text = text,
+				ZIndex = 4, Corner = 6,
 			}, b)
 			a.MouseButton1Click:Connect(function() moveTab(tab, dir) end)
 			return a
 		end
-		arrow("Up", -24, "▲", -1)
-		arrow("Down", -6, "▼", 1)
+		arrow("Up", -28, "^", -1)
+		arrow("Down", -6, "v", 1)
 		b.MouseButton1Click:Connect(function() showTab(tab) end)
 		b.MouseEnter:Connect(function() if current ~= tab then b.BackgroundTransparency = 0.5 end end)
 		b.MouseLeave:Connect(function() if current ~= tab then b.BackgroundTransparency = 1 end end)
